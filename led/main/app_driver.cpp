@@ -32,10 +32,11 @@ using namespace esp_matter;
 
 static const char *TAG = "app_driver";
 extern uint16_t light_endpoint_id;
-extern uint16_t LED_fx_id;
-extern uint16_t LED_fx_attribute_id;
+//extern uint16_t LED_fx_id;
 
 void TaskWS2812Ranbow(void *p);
+
+void TaskWS2812OneByOne(void *p);
 
 /* Do any conversions/remapping for the actual value here */
 static esp_err_t app_driver_light_set_power(led_driver_handle_t handle, esp_matter_attr_val_t *val) {
@@ -85,6 +86,11 @@ TaskHandle_t xTaskHandle = nullptr;
 esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_t endpoint_id, uint32_t cluster_id,
                                       uint32_t attribute_id, esp_matter_attr_val_t *val) {
     esp_err_t err = ESP_OK;
+    ESP_LOGI(
+        TAG,
+        "Enter cb 9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999")
+    ;
+    ESP_LOGI(TAG, "cluster_id = %d ; attribute_id = %d ; val = %d", (int)cluster_id, (int)attribute_id, val->val.i);
     if (endpoint_id == light_endpoint_id) {
         led_driver_handle_t handle = (led_driver_handle_t) driver_handle;
         if (cluster_id == OnOff::Id) {
@@ -104,28 +110,39 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
                 err = app_driver_light_set_temperature(handle, val);
             }
         }
-    }
-    if (endpoint_id == LED_fx_id) {
-        led_driver_handle_t handle = (led_driver_handle_t) driver_handle;
-        if (cluster_id == /*Switch::Id*/0x131bfc00) {
-            if (attribute_id == /*Switch::Attributes::CurrentPosition::Id*/LED_fx_attribute_id) {
+        if (cluster_id == ModeSelect::Id) {
+            if (attribute_id == ModeSelect::Attributes::CurrentMode::Id) {
                 switch (val->val.i) {
                     case 0:
                         // 关闭所有灯光特效
-                            if (xTaskHandle != nullptr) {
-                                vTaskDelete(xTaskHandle); // 终止任务
-                                xTaskHandle = nullptr; // 清空句柄
-                            }
-                    break;
+                        if (xTaskHandle != nullptr) {
+                            vTaskDelete(xTaskHandle); // 终止任务
+                            xTaskHandle = nullptr; // 清空句柄
+                            app_driver_light_set_defaults(light_endpoint_id);
+                        }
+                        break;
                     case 1:
                         // 创建彩虹灯光任务
-                            if (xTaskHandle == nullptr) {
-                                xTaskCreate(TaskWS2812Ranbow, "ranbow", 4096, handle, 5, &xTaskHandle);
-                                vTaskDelete(NULL);
-                            }
-                    break;
-                    case 3:
+                        if (xTaskHandle == nullptr) {
+                            xTaskCreate(TaskWS2812Ranbow, "ranbow", 2048, handle, 5, &xTaskHandle);
+                        } else {
+                            vTaskDelete(xTaskHandle); // 终止任务
+                            xTaskHandle = nullptr; // 清空句柄
+                            xTaskCreate(TaskWS2812Ranbow, "ranbow", 2048, handle, 5, &xTaskHandle);
+                        }
+                        break;
+                    case 2:
                         // 灯效3
+                        // 创建彩虹灯光任务
+                        if (xTaskHandle == nullptr) {
+                            //led_driver_set_power(handle, false);
+                            xTaskCreate(TaskWS2812OneByOne, "onebyone", 4096, handle, 5, &xTaskHandle);
+                        } else {
+                            vTaskDelete(xTaskHandle); // 终止任务
+                            xTaskHandle = nullptr; // 清空句柄
+                            //led_driver_set_power(handle, false);
+                            xTaskCreate(TaskWS2812OneByOne, "onebyone", 4096, handle, 5, &xTaskHandle);
+                        }
                         break;
                     default:
                         break;
@@ -147,19 +164,55 @@ void TaskWS2812Ranbow(void *p) {
                 current_HS.hue = j * 360 / 24 + start_rgb;
                 hsv_to_rgb(current_HS, 100, &mRGB);
                 // Write RGB values to strip driver
-                //ESP_ERROR_CHECK();
                 strip->set_pixel(strip, j, mRGB.red, mRGB.green, mRGB.blue);
             } // Flush RGB values to LEDs
-            // strip->clear(strip, 50);
-            // vTaskDelay(pdMS_TO_TICKS(10));
         }
-        //ESP_ERROR_CHECK();
         strip->refresh(strip, 100);
         vTaskDelay(pdMS_TO_TICKS(3));
         start_rgb -= 1;
-        //ESP_LOGE(TAG, "success");
-    } //xTaskCreate(TaskWS2812Ranbow,"ranbow",4096,handle,5,nullptr);
+    }
 }
+
+void TaskWS2812OneByOne(void *p) {
+    led_strip_t *strip = (led_strip_t *) p;
+    u_int64_t start_rgb = 0;
+    current_HS.saturation = 100;
+    //uint8_t nums = 5;
+    while (true) {
+        led_driver_set_power(strip, false);
+        for (int j = 0; j < 144; j++) {
+            // Build RGB values
+            current_HS.hue = j * 360 / 24 + start_rgb;
+            hsv_to_rgb(current_HS, 100, &mRGB);
+            // Write RGB values to strip driver
+            strip->set_pixel(strip, j, mRGB.red, mRGB.green, mRGB.blue);
+            strip->refresh(strip, 100);
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        for (int j = 0; j < 144; j++) {
+            strip->set_pixel(strip, j, 0, 0, 0);
+            strip->refresh(strip, 100);
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        for (int j = 143; j >= 0; j--) {
+            // Build RGB values
+            current_HS.hue = j * 360 / 24 + start_rgb;
+            hsv_to_rgb(current_HS, 100, &mRGB);
+            // Write RGB values to strip driver
+            strip->set_pixel(strip, j, mRGB.red, mRGB.green, mRGB.blue);
+            strip->refresh(strip, 100);
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        for (int j = 143; j >= 0; j--) {
+            strip->set_pixel(strip, j, 0, 0, 0);
+            strip->refresh(strip, 100);
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        start_rgb +=50;
+    }
+}
+
+
 
 esp_err_t app_driver_light_set_defaults(uint16_t endpoint_id) {
     esp_err_t err = ESP_OK;

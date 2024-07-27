@@ -25,8 +25,8 @@
 
 static const char *TAG = "app_main";
 uint16_t light_endpoint_id = 0;
-uint16_t LED_fx_id = 0;
-uint16_t LED_fx_attribute_id;
+//uint16_t LED_fx_id = 0;
+//uint16_t LED_fx_attribute_id;
 
 using namespace esp_matter;
 using namespace esp_matter::attribute;
@@ -175,18 +175,12 @@ extern "C" void app_main()
     light_endpoint_id = endpoint::get_id(endpoint);
     ESP_LOGI(TAG, "Light created with endpoint_id %d", light_endpoint_id);
 
-    /*generic_switch::config_t config_1;
-    config_1.switch_cluster.number_of_positions = 3;
-    config_1.switch_cluster.cluster_revision = 0;
-    config_1.switch_cluster.current_position = 0;
-    config_1.descriptor.cluster_revision = 0;
-    config_1.identify.cluster_revision = 0;
-    config_1.identify.identify_time = 0;
-    config_1.identify.identify_type = 0;
-    endpoint_t *LED_fx_end = generic_switch::create(node, &config_1, ENDPOINT_FLAG_NONE, light_handle);
-    LED_fx_id = endpoint::get_id(LED_fx_end);*/
+    cluster::mode_select::config_t config_1;
+    cluster_t *LED_fx = cluster::mode_select::create(endpoint, &config_1, CLUSTER_FLAG_SERVER, cluster::mode_select::feature::on_off::get_id());
+    //LED_fx_id = cluster::get_id(LED_fx);
+    //ESP_LOGI(TAG, "LED_fx_id(cluster) id =%d", LED_fx_id);
 
-    endpoint_t *LED_fx_end = endpoint::create(node, ENDPOINT_FLAG_NONE, light_handle);
+    /*endpoint_t *LED_fx_end = endpoint::create(node, ENDPOINT_FLAG_NONE, light_handle);
     endpoint::add_device_type(LED_fx_end, 13, 10);
     uint32_t custom_cluster_id = 0x0000005A;
     cluster_t *LED_fx = cluster::create(LED_fx_end, custom_cluster_id, CLUSTER_FLAG_SERVER);
@@ -195,7 +189,7 @@ extern "C" void app_main()
     attribute_t *current_fx = attribute::create(LED_fx, custom_attribute_id, ATTRIBUTE_FLAG_NONE, esp_matter_uint16(current_fx_id));
     LED_fx_id = endpoint::get_id(LED_fx_end);
     LED_fx_attribute_id = attribute::get_id(current_fx);
-    ESP_LOGI(TAG, "LED_fx_end id =%d and the attribute id is :%d", LED_fx_id, LED_fx_attribute_id);
+    ESP_LOGI(TAG, "LED_fx_end id =%d and the attribute id is :%d", LED_fx_id, LED_fx_attribute_id);*/
 
 
     /* Mark deferred persistence for some attributes that might be changed rapidly */
@@ -203,9 +197,9 @@ extern "C" void app_main()
     attribute_t *current_level_attribute = attribute::get(level_control_cluster, LevelControl::Attributes::CurrentLevel::Id);
     attribute::set_deferred_persistence(current_level_attribute);
 
-    cluster_t *mode_select_attribute = cluster::get(endpoint, ModeSelect::Id);
+    /*cluster_t *mode_select_attribute = cluster::get(endpoint, ModeSelect::Id);
     attribute_t *current_mode_attribute = attribute::get(mode_select_attribute, ModeSelect::Attributes::CurrentMode::Id);
-    attribute::set_deferred_persistence(current_mode_attribute);
+    attribute::set_deferred_persistence(current_mode_attribute);*/
 
     cluster_t *color_control_cluster = cluster::get(endpoint, ColorControl::Id);
     attribute_t *current_x_attribute = attribute::get(color_control_cluster, ColorControl::Attributes::CurrentX::Id);
