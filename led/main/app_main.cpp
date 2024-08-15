@@ -20,11 +20,15 @@
 #include <platform/ESP32/OpenthreadLauncher.h>
 #endif
 
+#include <app/clusters/mode-select-server/supported-modes-manager.h>
 #include <app/server/CommissioningWindowManager.h>
 #include <app/server/Server.h>
 
+#include <static-supported-modes-manager.h>
+
 static const char *TAG = "app_main";
 uint16_t light_endpoint_id = 0;
+uint16_t mode_endpoint_id;
 //uint16_t LED_fx_id = 0;
 //uint16_t LED_fx_attribute_id;
 
@@ -174,11 +178,25 @@ extern "C" void app_main()
     }
     light_endpoint_id = endpoint::get_id(endpoint);
     ESP_LOGI(TAG, "Light created with endpoint_id %d", light_endpoint_id);
+    //
 
+    endpoint_t *endpoint1 = endpoint::create(node, ENDPOINT_FLAG_NONE, light_handle);
+    endpoint::add_device_type(endpoint1, 39, 1);
     cluster::mode_select::config_t config_1;
-    cluster_t *LED_fx = cluster::mode_select::create(endpoint, &config_1, CLUSTER_FLAG_SERVER, cluster::mode_select::feature::on_off::get_id());
-    //LED_fx_id = cluster::get_id(LED_fx);
+    //config_1.cluster_revision = 1;
+    cluster_t *LED_fx = cluster::mode_select::create(endpoint1, &config_1, CLUSTER_FLAG_SERVER, ESP_MATTER_NONE_FEATURE_ID);
+    ModeSelect::StaticSupportedModesManager::getStaticSupportedModesManagerInstance().InitEndpointArray(get_count(node));
+    uint32_t LED_fx_id = cluster::get_id(LED_fx);
+    mode_endpoint_id = endpoint::get_id(endpoint1);
+
     //ESP_LOGI(TAG, "LED_fx_id(cluster) id =%d", LED_fx_id);
+    /*uint8_t * supported_modes = (uint8_t *)malloc(sizeof(uint16_t) * 3);
+    for ( int i = 0; i < 3; i++) {
+        supported_modes[i] = i;
+    }
+    cluster::mode_select::attribute::create_supported_modes(LED_fx, supported_modes, sizeof(uint8_t) * 3,1);*/
+
+    
 
     /*endpoint_t *LED_fx_end = endpoint::create(node, ENDPOINT_FLAG_NONE, light_handle);
     endpoint::add_device_type(LED_fx_end, 13, 10);

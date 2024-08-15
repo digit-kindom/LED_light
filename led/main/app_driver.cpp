@@ -32,6 +32,7 @@ using namespace esp_matter;
 
 static const char *TAG = "app_driver";
 extern uint16_t light_endpoint_id;
+extern uint16_t mode_endpoint_id;
 //extern uint16_t LED_fx_id;
 
 void TaskWS2812Ranbow(void *p);
@@ -110,6 +111,9 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
                 err = app_driver_light_set_temperature(handle, val);
             }
         }
+    }
+    if (endpoint_id == mode_endpoint_id) {
+        led_driver_handle_t handle = (led_driver_handle_t) driver_handle;
         if (cluster_id == ModeSelect::Id) {
             if (attribute_id == ModeSelect::Attributes::CurrentMode::Id) {
                 switch (val->val.i) {

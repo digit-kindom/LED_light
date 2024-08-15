@@ -84,6 +84,7 @@ esp_err_t app_driver_attribute_update_1(app_driver_handle_t driver_handle, uint1
 esp_err_t app_driver_light_set_defaults(uint16_t endpoint_id);
 
 void TaskWS2812Ranbow(void *p);
+extern uint16_t mode_endpoint_id;
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #define ESP_OPENTHREAD_DEFAULT_RADIO_CONFIG()                                           \
