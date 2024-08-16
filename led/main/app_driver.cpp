@@ -87,10 +87,6 @@ TaskHandle_t xTaskHandle = nullptr;
 esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_t endpoint_id, uint32_t cluster_id,
                                       uint32_t attribute_id, esp_matter_attr_val_t *val) {
     esp_err_t err = ESP_OK;
-    ESP_LOGI(
-        TAG,
-        "Enter cb 9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999")
-    ;
     ESP_LOGI(TAG, "cluster_id = %d ; attribute_id = %d ; val = %d", (int)cluster_id, (int)attribute_id, val->val.i);
     if (endpoint_id == light_endpoint_id) {
         led_driver_handle_t handle = (led_driver_handle_t) driver_handle;
